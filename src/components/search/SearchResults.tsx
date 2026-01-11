@@ -4,6 +4,7 @@ import { useState, useCallback } from 'react';
 import { useQueryState, parseAsInteger, parseAsString } from 'nuqs';
 import { SearchBar } from './SearchBar';
 import { SearchPagination } from './SearchPagination';
+import { GenreFilter } from './GenreFilter';
 import { MovieGrid, MovieGridSkeleton } from '@/components/movies';
 import { useMovieSearch, useDebounce } from '@/lib/hooks';
 import type { PaginationInfo } from '@/types/movie';
@@ -13,11 +14,11 @@ export function SearchResults() {
   const debouncedSearch = useDebounce(searchInput, 300);
 
   const [page, setPage] = useQueryState('page', parseAsInteger.withDefault(1));
-  const [genre] = useQueryState('genre', parseAsString.withDefault(''));
+  const [genre, setGenre] = useQueryState('genre', parseAsString.withDefault(''));
 
   const { data, isLoading, isFetching } = useMovieSearch({
     search: debouncedSearch,
-    genre: genre || undefined,
+    genre: genre && genre !== 'all' ? genre : undefined,
     page,
   });
 
@@ -27,6 +28,14 @@ export function SearchResults() {
       setPage(1);
     },
     [setPage]
+  );
+
+  const handleGenreChange = useCallback(
+    (value: string) => {
+      setGenre(value === 'all' ? null : value);
+      setPage(1);
+    },
+    [setGenre, setPage]
   );
 
   const handlePageChange = useCallback(
@@ -48,12 +57,15 @@ export function SearchResults() {
 
   return (
     <div className="space-y-6">
-      <SearchBar
-        value={searchInput}
-        onChange={handleSearchChange}
-        isLoading={isFetching}
-        className="max-w-md"
-      />
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center">
+        <SearchBar
+          value={searchInput}
+          onChange={handleSearchChange}
+          isLoading={isFetching}
+          className="flex-1 sm:max-w-md"
+        />
+        <GenreFilter value={genre || 'all'} onChange={handleGenreChange} />
+      </div>
 
       {isLoading ? (
         <MovieGridSkeleton />
